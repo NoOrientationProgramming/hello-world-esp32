@@ -5,3 +5,5 @@ ignore/
 dependencies.lock
 *.old
 
+*Int.h
+
