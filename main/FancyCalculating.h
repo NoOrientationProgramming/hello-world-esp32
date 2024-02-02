@@ -5,7 +5,7 @@
   Author(s):
       - Johannes Natter, office@dsp-crowd.com
 
-  File created on 16.01.2024
+  File created on 02.02.2024
 
   Copyright (C) 2024-now Authors and www.dsp-crowd.com
 
@@ -23,31 +23,30 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef WLVL_SUPERVISING_H
-#define WLVL_SUPERVISING_H
+#ifndef FANCY_CALCULATING_H
+#define FANCY_CALCULATING_H
 
 #include "Processing.h"
-#include "EspWifiConnecting.h"
 
-class WlvlSupervising : public Processing
+class FancyCalculating : public Processing
 {
 
 public:
 
-	static WlvlSupervising *create()
+	static FancyCalculating *create()
 	{
-		return new (std::nothrow) WlvlSupervising;
+		return new (std::nothrow) FancyCalculating;
 	}
 
 protected:
 
-	WlvlSupervising();
-	virtual ~WlvlSupervising() {}
+	FancyCalculating();
+	virtual ~FancyCalculating() {}
 
 private:
 
-	WlvlSupervising(const WlvlSupervising &) : Processing("") {}
-	WlvlSupervising &operator=(const WlvlSupervising &) { return *this; }
+	FancyCalculating(const FancyCalculating &) : Processing("") {}
+	FancyCalculating &operator=(const FancyCalculating &) { return *this; }
 
 	/*
 	 * Naming of functions:  objectVerb()
@@ -60,7 +59,6 @@ private:
 
 	/* member variables */
 	uint32_t mStartMs;
-	EspWifiConnecting *mpWifi;
 
 	/* static functions */
 

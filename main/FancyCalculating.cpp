@@ -5,7 +5,7 @@
   Author(s):
       - Johannes Natter, office@dsp-crowd.com
 
-  File created on 16.01.2024
+  File created on 02.02.2024
 
   Copyright (C) 2024-now Authors and www.dsp-crowd.com
 
@@ -23,16 +23,10 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "WlvlSupervising.h"
-#include "SystemDebugging.h"
-#include "WlvlMonitoring.h"
-#include "WifiConnectingInt.h"
+#include "FancyCalculating.h"
 
 #define dForEach_ProcState(gen) \
 		gen(StStart) \
-		gen(StWifiStart) \
-		gen(StWifiConnectedWait) \
-		gen(StMainStart) \
 		gen(StMain) \
 		gen(StTmp) \
 
@@ -48,20 +42,17 @@ using namespace std;
 
 #define LOG_LVL	0
 
-WlvlSupervising::WlvlSupervising()
-	: Processing("WlvlSupervising")
+FancyCalculating::FancyCalculating()
+	: Processing("FancyCalculating")
 	, mStartMs(0)
-	, mpWifi(NULL)
 {
 	mState = StStart;
 }
 
 /* member functions */
 
-Success WlvlSupervising::process()
+Success FancyCalculating::process()
 {
-	Processing *pProc;
-	SystemDebugging *pDbg;
 	//uint32_t curTimeMs = millis();
 	//uint32_t diffMs = curTimeMs - mStartMs;
 	//Success success;
@@ -71,52 +62,6 @@ Success WlvlSupervising::process()
 	switch (mState)
 	{
 	case StStart:
-
-		mState = StWifiStart;
-
-		break;
-	case StWifiStart:
-
-		mpWifi = EspWifiConnecting::create();
-		if (!mpWifi)
-			return procErrLog(-1, "could not create process");
-
-		mpWifi->ssidSet(CONFIG_INT_ESP_WIFI_SSID);
-		mpWifi->passwordSet(CONFIG_INT_ESP_WIFI_PASSWORD);
-
-		start(mpWifi);
-
-		procInfLog("waiting for wifi");
-
-		mState = StWifiConnectedWait;
-
-		break;
-	case StWifiConnectedWait:
-
-		if (!mpWifi->connected())
-			break;
-
-		procInfLog("wifi connected");
-
-		mState = StMainStart;
-
-		break;
-	case StMainStart:
-
-		pProc = WlvlMonitoring::create();
-		if (!pProc)
-			return procErrLog(-1, "could not create process");
-
-		start(pProc);
-
-		pDbg = SystemDebugging::create(this);
-		if (!pDbg)
-			return procErrLog(-1, "could not create process");
-
-		pDbg->procTreeDisplaySet(false);
-		start(pDbg);
-
-		mState = StMain;
 
 		break;
 	case StMain:
@@ -132,7 +77,7 @@ Success WlvlSupervising::process()
 	return Pending;
 }
 
-void WlvlSupervising::processInfo(char *pBuf, char *pBufEnd)
+void FancyCalculating::processInfo(char *pBuf, char *pBufEnd)
 {
 #if 1
 	dInfo("State\t\t\t%s\n", ProcStateString[mState]);

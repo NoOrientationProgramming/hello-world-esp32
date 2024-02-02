@@ -23,31 +23,31 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef WLVL_SUPERVISING_H
-#define WLVL_SUPERVISING_H
+#ifndef WLVL_MONITORING_H
+#define WLVL_MONITORING_H
 
 #include "Processing.h"
-#include "EspWifiConnecting.h"
+#include "ThreadPooling.h"
 
-class WlvlSupervising : public Processing
+class WlvlMonitoring : public Processing
 {
 
 public:
 
-	static WlvlSupervising *create()
+	static WlvlMonitoring *create()
 	{
-		return new (std::nothrow) WlvlSupervising;
+		return new (std::nothrow) WlvlMonitoring;
 	}
 
 protected:
 
-	WlvlSupervising();
-	virtual ~WlvlSupervising() {}
+	WlvlMonitoring();
+	virtual ~WlvlMonitoring() {}
 
 private:
 
-	WlvlSupervising(const WlvlSupervising &) : Processing("") {}
-	WlvlSupervising &operator=(const WlvlSupervising &) { return *this; }
+	WlvlMonitoring(const WlvlMonitoring &) : Processing("") {}
+	WlvlMonitoring &operator=(const WlvlMonitoring &) { return *this; }
 
 	/*
 	 * Naming of functions:  objectVerb()
@@ -60,11 +60,16 @@ private:
 
 	/* member variables */
 	uint32_t mStartMs;
-	EspWifiConnecting *mpWifi;
+	ThreadPooling *mpPool;
 
 	/* static functions */
+	static void poolDriverCreate(Processing *pProc, uint16_t idProc);
+	static void poolWorkerDrive(Processing *pChild);
+
+	static void cmdProcAdd(char *pArgs, char *pBuf, char *pBufEnd);
 
 	/* static variables */
+	static bool fancyCreateReq;
 
 	/* constants */
 
