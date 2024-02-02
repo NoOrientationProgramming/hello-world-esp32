@@ -26,7 +26,13 @@
 #include "WlvlSupervising.h"
 #include "SystemDebugging.h"
 #include "WlvlMonitoring.h"
-#include "WifiConnectingInt.h"
+
+#include "WifiConnectingInt.h" // <-- Delete this line
+
+#ifndef CONFIG_INT_ESP_WIFI_SSID
+#define CONFIG_INT_ESP_WIFI_SSID		"ssid"
+#define CONFIG_INT_ESP_WIFI_PASSWORD	"password"
+#endif
 
 #define dForEach_ProcState(gen) \
 		gen(StStart) \
