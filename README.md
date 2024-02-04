@@ -38,7 +38,11 @@ idf.py flash
 Connect to debugging channels
 ```
 nc <ip> 3000
+```
+```
 nc <ip> 3001
+```
+```
 nc <ip> 3002
 ```
 
