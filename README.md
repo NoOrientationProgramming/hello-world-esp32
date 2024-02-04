@@ -14,8 +14,7 @@ Initialize git submodules
 git submodule update --init --recursive
 ```
 
-Load toolchain (must be installed already). See 
-https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html
+Load toolchain (must be installed already, see [ESP-IDF Setup](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html))
 
 ```
 . ../esp-idf/export.sh
