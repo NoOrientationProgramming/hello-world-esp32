@@ -59,6 +59,8 @@ private:
 	Success process();
 	void processInfo(char *pBuf, char *pBufEnd);
 
+	void fancyCalculationsCreate();
+
 	/* member variables */
 	uint32_t mStartMs;
 	LedPulsing *mpLed;

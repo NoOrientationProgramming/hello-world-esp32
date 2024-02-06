@@ -109,23 +109,7 @@ Success WlvlMonitoring::process()
 		break;
 	case StMain:
 
-		if (!fancyCreateReq)
-			break;
-		fancyCreateReq = false;
-
-		procInfLog("creating fancy process");
-
-		FancyCalculating *pFancy;
-
-		pFancy = FancyCalculating::create();
-		if (!pFancy)
-		{
-			procErrLog(-1, "could not create process");
-			break;
-		}
-
-		start(pFancy, DrivenByExternalDriver);
-		ThreadPooling::procAdd(pFancy);
+		fancyCalculationsCreate();
 
 		break;
 	case StTmp:
@@ -136,6 +120,29 @@ Success WlvlMonitoring::process()
 	}
 
 	return Pending;
+}
+
+void WlvlMonitoring::fancyCalculationsCreate()
+{
+	if (!fancyCreateReq)
+		return;
+	fancyCreateReq = false;
+
+	procInfLog("creating fancy process");
+
+	FancyCalculating *pFancy;
+
+	pFancy = FancyCalculating::create();
+	if (!pFancy)
+	{
+		procErrLog(-1, "could not create process");
+		return;
+	}
+
+	start(pFancy, DrivenByExternalDriver);
+	whenFinishedRepel(pFancy);
+
+	ThreadPooling::procAdd(pFancy, idDriverFancy);
 }
 
 /*
