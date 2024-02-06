@@ -72,6 +72,7 @@ private:
 
 	/* static variables */
 	static bool fancyCreateReq;
+	static int32_t idDriverFancy;
 
 	/* constants */
 

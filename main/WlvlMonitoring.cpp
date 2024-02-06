@@ -48,6 +48,7 @@ using namespace std;
 #define LOG_LVL	0
 
 bool WlvlMonitoring::fancyCreateReq = false;
+int32_t WlvlMonitoring::idDriverFancy = 0;
 
 WlvlMonitoring::WlvlMonitoring()
 	: Processing("WlvlMonitoring")
@@ -174,10 +175,15 @@ void WlvlMonitoring::poolWorkerDrive(Processing *pChild)
 
 void WlvlMonitoring::cmdProcAdd(char *pArgs, char *pBuf, char *pBufEnd)
 {
+	if (pArgs and pArgs[0])
+		idDriverFancy = strtol(pArgs, NULL, 10);
+	else
+		idDriverFancy = -1;
+
 	infLog("requesting fancy process");
 	fancyCreateReq = true;
 
-	dInfo("requested fancy process");
+	dInfo("requested fancy process on driver %ld\n", idDriverFancy);
 }
 
 void WlvlMonitoring::processInfo(char *pBuf, char *pBufEnd)
