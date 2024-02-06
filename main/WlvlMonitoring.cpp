@@ -52,6 +52,7 @@ bool WlvlMonitoring::fancyCreateReq = false;
 WlvlMonitoring::WlvlMonitoring()
 	: Processing("WlvlMonitoring")
 	, mStartMs(0)
+	, mpLed(NULL)
 	, mpPool(NULL)
 {
 	mState = StStart;
@@ -79,6 +80,17 @@ Success WlvlMonitoring::process()
 			"",
 			"",
 			"Add dummy process");
+
+		mpLed = LedPulsing::create();
+		if (!mpLed)
+			return procErrLog(-1, "could not create process");
+
+		mpLed->pinSet(GPIO_NUM_2);
+		mpLed->paramSet(50, 200, 1, 800);
+		//mpLed->paramSet(50, 200, 2, 600); // <-- Error condition 2
+
+		mpLed->procTreeDisplaySet(false);
+		start(mpLed);
 
 		mpPool = ThreadPooling::create();
 		if (!mpPool)
