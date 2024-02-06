@@ -63,8 +63,12 @@ Success FancyCalculating::process()
 	{
 	case StStart:
 
+		mState = StMain;
+
 		break;
 	case StMain:
+
+		return Positive;
 
 		break;
 	case StTmp:
