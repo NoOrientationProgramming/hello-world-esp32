@@ -58,6 +58,7 @@ WlvlSupervising::WlvlSupervising()
 	: Processing("WlvlSupervising")
 	, mStartMs(0)
 	, mpWifi(NULL)
+	, mpLed(NULL)
 {
 	mState = StStart;
 }
@@ -94,6 +95,15 @@ Success WlvlSupervising::process()
 
 		procInfLog("waiting for wifi");
 
+		mpLed = LedPulsing::create();
+		if (!mpLed)
+			return procErrLog(-1, "could not create process");
+
+		mpLed->pinSet(GPIO_NUM_2);
+		mpLed->paramSet(500, 1000);
+
+		start(mpLed);
+
 		mState = StWifiConnectedWait;
 
 		break;
@@ -101,6 +111,9 @@ Success WlvlSupervising::process()
 
 		if (!mpWifi->connected())
 			break;
+
+		repel(mpLed);
+		mpLed = NULL;
 
 		procInfLog("wifi connected");
 
