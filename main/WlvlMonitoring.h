@@ -27,7 +27,7 @@
 #define WLVL_MONITORING_H
 
 #include "Processing.h"
-#include "LedPulsing.h"
+#include "EspLedPulsing.h"
 #include "ThreadPooling.h"
 
 class WlvlMonitoring : public Processing
@@ -63,7 +63,7 @@ private:
 
 	/* member variables */
 	uint32_t mStartMs;
-	LedPulsing *mpLed;
+	EspLedPulsing *mpLed;
 	ThreadPooling *mpPool;
 
 	/* static functions */

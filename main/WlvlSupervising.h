@@ -28,7 +28,7 @@
 
 #include "Processing.h"
 #include "EspWifiConnecting.h"
-#include "LedPulsing.h"
+#include "EspLedPulsing.h"
 
 class WlvlSupervising : public Processing
 {
@@ -62,7 +62,7 @@ private:
 	/* member variables */
 	uint32_t mStartMs;
 	EspWifiConnecting *mpWifi;
-	LedPulsing *mpLed;
+	EspLedPulsing *mpLed;
 
 	/* static functions */
 

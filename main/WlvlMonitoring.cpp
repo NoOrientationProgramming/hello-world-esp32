@@ -82,7 +82,7 @@ Success WlvlMonitoring::process()
 			"",
 			"Add dummy process");
 
-		mpLed = LedPulsing::create();
+		mpLed = EspLedPulsing::create();
 		if (!mpLed)
 			return procErrLog(-1, "could not create process");
 
