@@ -25,14 +25,20 @@
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <esp_log.h>
+#include <mutex>
 
 #include "WlvlMonitoring.h"
 #include "SystemCommanding.h"
-#include "FancyCalculating.h"
+#include "LibTime.h"
 
 #define dForEach_ProcState(gen) \
 		gen(StStart) \
+		gen(StPoolStart) \
+		gen(StPoolDownWait) \
 		gen(StMain) \
+		gen(StFancyStart) \
+		gen(StFancyDoneWait) \
 		gen(StTmp) \
 
 #define dGenProcStateEnum(s) s,
@@ -48,11 +54,19 @@ using namespace std;
 #define LOG_LVL	0
 
 bool WlvlMonitoring::fancyCreateReq = false;
-int32_t WlvlMonitoring::idDriverFancy = 0;
+bool WlvlMonitoring::fancyDrivenByPool = false;
+uint32_t WlvlMonitoring::cntFancy = 1;
+
+bool WlvlMonitoring::poolDownReq = false;
+bool WlvlMonitoring::poolUpReq = false;
+
+Processing *pDrvs[2];
+static mutex mtxDrv;
 
 WlvlMonitoring::WlvlMonitoring()
 	: Processing("WlvlMonitoring")
 	, mStartMs(0)
+	, mFancyDiffMs(0)
 	, mpLed(NULL)
 	, mpPool(NULL)
 {
@@ -63,9 +77,12 @@ WlvlMonitoring::WlvlMonitoring()
 
 Success WlvlMonitoring::process()
 {
-	//uint32_t curTimeMs = millis();
-	//uint32_t diffMs = curTimeMs - mStartMs;
-	//Success success;
+	uint32_t curTimeMs = millis();
+	uint32_t diffMs = curTimeMs - mStartMs;
+	Success success;
+	list<FancyCalculating *>::iterator iter;
+	TaskHandle_t pTask;
+	UBaseType_t prio;
 #if 0
 	dStateTrace;
 #endif
@@ -73,14 +90,25 @@ Success WlvlMonitoring::process()
 	{
 	case StStart:
 
-		procInfLog("StStart");
+		procInfLog("Starting main process");
 
 		cmdReg(
 			"procAdd",
 			&WlvlMonitoring::cmdProcAdd,
-			"",
-			"",
+			"", "",
 			"Add dummy process");
+
+		cmdReg(
+			"poolDown",
+			&WlvlMonitoring::cmdPoolDown,
+			"", "",
+			"Shutdown thread pool");
+
+		cmdReg(
+			"poolUp",
+			&WlvlMonitoring::cmdPoolUp,
+			"", "",
+			"Start thread pool");
 
 		mpLed = EspLedPulsing::create();
 		if (!mpLed)
@@ -93,12 +121,40 @@ Success WlvlMonitoring::process()
 		mpLed->procTreeDisplaySet(false);
 		start(mpLed);
 
+		{
+			lock_guard<mutex> lock(mtxDrv);
+			pDrvs[0] = NULL;
+			pDrvs[1] = NULL;
+		}
+
+		pTask = xTaskGetCurrentTaskHandle();
+		prio = uxTaskPriorityGet(pTask);
+
+		procDbgLog(LOG_LVL, "Priority of main process is %u", prio);
+
+		for (uint8_t i = 0; i < 2; ++i)
+		{
+			xTaskCreatePinnedToCore(
+				cpuBoundProcess,				// function
+				!i ? "Primary" : "Secondary",		// name
+				4096,		// stack
+				pDrvs + i,	// parameter
+				prio,		// priority
+				NULL,		// handle
+				i);			// core ID
+		}
+
+		mState = StPoolStart;
+
+		break;
+	case StPoolStart:
+
 		mpPool = ThreadPooling::create();
 		if (!mpPool)
 			return procErrLog(-1, "could not create process");
 #if 1
 		mpPool->workerCntSet(2);
-		mpPool->driverCreateFctSet(poolDriverCreate);
+		mpPool->driverCreateFctSet(poolDriverSet);
 #else
 		mpPool->workerCntSet(1);
 #endif
@@ -107,9 +163,108 @@ Success WlvlMonitoring::process()
 		mState = StMain;
 
 		break;
+	case StPoolDownWait:
+
+		if (!mpPool->shutdownDone())
+			break;
+
+		procDbgLog(LOG_LVL, "pool shutdown finished");
+
+		repel(mpPool);
+		mpPool = NULL;
+
+		mState = StMain;
+
+		break;
 	case StMain:
 
-		fancyCalculationsCreate();
+		if (fancyCreateReq)
+		{
+			fancyCreateReq = false;
+
+			mState = StFancyStart;
+			break;
+		}
+
+		if (poolDownReq)
+		{
+			poolDownReq = false;
+
+			if (!mpPool)
+				break;
+
+			cancel(mpPool);
+
+			procDbgLog(LOG_LVL, "waiting for pool to be shut down");
+
+			mState = StPoolDownWait;
+			break;
+		}
+
+		if (poolUpReq)
+		{
+			poolUpReq = false;
+
+			if (mpPool)
+				break;
+
+			mState = StPoolStart;
+			break;
+		}
+
+		break;
+	case StFancyStart:
+
+		procDbgLog(LOG_LVL, "creating fancy process");
+
+		for (uint32_t i = 0; i < cntFancy; ++i)
+		{
+			FancyCalculating *pFancy;
+
+			pFancy = FancyCalculating::create();
+			if (!pFancy)
+			{
+				procErrLog(-1, "could not create process");
+				break;
+			}
+
+			pFancy->paramSet(100, 40);
+			mLstFancy.push_back(pFancy);
+
+			if (!fancyDrivenByPool)
+			{
+				start(pFancy);
+				continue;
+			}
+
+			start(pFancy, DrivenByExternalDriver);
+			ThreadPooling::procAdd(pFancy);
+		}
+
+		mStartMs = millis();
+		mState = StFancyDoneWait;
+
+		break;
+	case StFancyDoneWait:
+
+		mFancyDiffMs = diffMs;
+
+		iter = mLstFancy.begin();
+		while (iter != mLstFancy.end())
+		{
+			FancyCalculating *pFancy = *iter;
+
+			success = pFancy->success();
+			if (success == Pending)
+				return Pending;
+
+			repel(pFancy);
+			pFancy = NULL;
+
+			iter = mLstFancy.erase(iter);
+		}
+
+		mState = StMain;
 
 		break;
 	case StTmp:
@@ -122,75 +277,99 @@ Success WlvlMonitoring::process()
 	return Pending;
 }
 
-void WlvlMonitoring::fancyCalculationsCreate()
-{
-	if (!fancyCreateReq)
-		return;
-	fancyCreateReq = false;
-
-	procInfLog("creating fancy process");
-
-	FancyCalculating *pFancy;
-
-	pFancy = FancyCalculating::create();
-	if (!pFancy)
-	{
-		procErrLog(-1, "could not create process");
-		return;
-	}
-
-	start(pFancy, DrivenByExternalDriver);
-	whenFinishedRepel(pFancy);
-
-	ThreadPooling::procAdd(pFancy, idDriverFancy);
-}
-
 /*
  * Literature
  * - https://docs.espressif.com/projects/esp-idf/en/v4.3/esp32/api-reference/system/freertos.html
  */
-void WlvlMonitoring::poolDriverCreate(Processing *pProc, uint16_t idProc)
+void WlvlMonitoring::poolDriverSet(Processing *pDrv, uint16_t idDrv)
 {
-	const char *pName = !idProc ? "Primary" : "Secondary";
-
-	xTaskCreatePinnedToCore(
-		(TaskFunction_t)poolWorkerDrive,
-		pName,
-		4096,
-		pProc,
-		1,
-		NULL,
-		idProc);
+	lock_guard<mutex> lock(mtxDrv);
+	pDrvs[idDrv] = pDrv;
 }
 
-void WlvlMonitoring::poolWorkerDrive(Processing *pChild)
+void WlvlMonitoring::cpuBoundProcess(void *arg)
 {
-	infLog("entered pool worker driver: %p", pChild);
+	Processing *pDrv;
+	uint32_t id = arg == pDrvs ? 0 : 1;
+
+	dbgLog(LOG_LVL, "entered CPU%lu bound process", id);
 
 	while (1)
 	{
-		pChild->treeTick();
-		this_thread::sleep_for(chrono::milliseconds(2));
+		{
+			lock_guard<mutex> lock(mtxDrv);
+			pDrv = pDrvs[id];
+		}
 
-		if (pChild->progress())
+		if (!pDrv)
+		{
+			this_thread::sleep_for(chrono::milliseconds(2));
 			continue;
+		}
 
-		undrivenSet(pChild);
-		break;
+		dbgLog(LOG_LVL, "driver for CPU%lu set", id);
+
+		while (1)
+		{
+			pDrv->treeTick();
+			this_thread::sleep_for(chrono::milliseconds(2));
+
+			if (pDrv->progress())
+				continue;
+
+			undrivenSet(pDrv);
+			break;
+		}
+
+		{
+			lock_guard<mutex> lock(mtxDrv);
+			pDrvs[id] = NULL;
+		}
+
+		dbgLog(LOG_LVL, "driver for CPU%lu unset", id);
 	}
+
+	wrnLog("finished CPU%lu bound process", id);
 }
 
 void WlvlMonitoring::cmdProcAdd(char *pArgs, char *pBuf, char *pBufEnd)
 {
-	if (pArgs and pArgs[0])
-		idDriverFancy = strtol(pArgs, NULL, 10);
-	else
-		idDriverFancy = -1;
+	cntFancy = 1;
+	fancyDrivenByPool = false;
 
-	infLog("requesting fancy process");
+	if (*pArgs)
+		cntFancy = strtol(pArgs, NULL, 10);
+
+	if (cntFancy > 20)
+	{
+		infLog("max 20 tasks allowed");
+		cntFancy = 20;
+	}
+
+	pArgs = strchr(pArgs, ' ');
+	if (pArgs)
+		fancyDrivenByPool = strtol(pArgs, NULL, 10);
+
+	dbgLog(LOG_LVL, "requesting fancy process");
 	fancyCreateReq = true;
 
-	dInfo("requested fancy process on driver %ld\n", idDriverFancy);
+	dInfo("Count: %lu, Driven by %s\n", cntFancy, fancyDrivenByPool ? "thread pool" : "parent");
+}
+
+void WlvlMonitoring::cmdPoolDown(char *pArgs, char *pBuf, char *pBufEnd)
+{
+	dbgLog(LOG_LVL, "requesting thread pool shutdown");
+	poolDownReq = true;
+
+	dInfo("thread pool shutdown requested");
+}
+
+void WlvlMonitoring::cmdPoolUp(char *pArgs, char *pBuf, char *pBufEnd)
+{
+	dbgLog(LOG_LVL, "requesting thread pool start");
+	poolUpReq = true;
+
+	dInfo("thread pool start requested");
 }
 
 void WlvlMonitoring::processInfo(char *pBuf, char *pBufEnd)
@@ -198,6 +377,7 @@ void WlvlMonitoring::processInfo(char *pBuf, char *pBufEnd)
 #if 1
 	dInfo("State\t\t\t%s\n", ProcStateString[mState]);
 #endif
+	dInfo("Fancy duration\t\t%lums", mFancyDiffMs);
 }
 
 /* static functions */
