@@ -38,6 +38,8 @@ public:
 		return new (std::nothrow) FancyCalculating;
 	}
 
+	void paramSet(uint32_t timeCalcMs, uint32_t cntCalcMax);
+
 protected:
 
 	FancyCalculating();
@@ -59,6 +61,9 @@ private:
 
 	/* member variables */
 	uint32_t mStartMs;
+	uint32_t mTimeCalcMs;
+	uint32_t mCntCalc;
+	uint32_t mCntCalcMax;
 
 	/* static functions */
 

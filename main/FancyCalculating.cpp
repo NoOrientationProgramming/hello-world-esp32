@@ -24,16 +24,16 @@
 */
 
 #include "FancyCalculating.h"
+#include "LibTime.h"
 
 #define dForEach_ProcState(gen) \
 		gen(StStart) \
 		gen(StMain) \
-		gen(StTmp) \
 
 #define dGenProcStateEnum(s) s,
 dProcessStateEnum(ProcState);
 
-#if 1
+#if 0
 #define dGenProcStateString(s) #s,
 dProcessStateStr(ProcState);
 #endif
@@ -45,16 +45,25 @@ using namespace std;
 FancyCalculating::FancyCalculating()
 	: Processing("FancyCalculating")
 	, mStartMs(0)
+	, mTimeCalcMs(50)
+	, mCntCalc(0)
+	, mCntCalcMax(10)
 {
 	mState = StStart;
 }
 
 /* member functions */
 
+void FancyCalculating::paramSet(uint32_t timeCalcMs, uint32_t cntCalcMax)
+{
+	mTimeCalcMs = timeCalcMs;
+	mCntCalcMax = cntCalcMax;
+}
+
 Success FancyCalculating::process()
 {
-	//uint32_t curTimeMs = millis();
-	//uint32_t diffMs = curTimeMs - mStartMs;
+	uint32_t curTimeMs = millis();
+	uint32_t diffMs = curTimeMs - mStartMs;
 	//Success success;
 #if 0
 	dStateTrace;
@@ -68,10 +77,20 @@ Success FancyCalculating::process()
 		break;
 	case StMain:
 
-		return Positive;
+		if (mCntCalc >= mCntCalcMax)
+			return Positive;
+		++mCntCalc;
 
-		break;
-	case StTmp:
+		mStartMs = millis();
+
+		while (1)
+		{
+			curTimeMs = millis();
+			diffMs = curTimeMs - mStartMs;
+
+			if (diffMs >= mTimeCalcMs)
+				break;
+		}
 
 		break;
 	default:
@@ -83,9 +102,10 @@ Success FancyCalculating::process()
 
 void FancyCalculating::processInfo(char *pBuf, char *pBufEnd)
 {
-#if 1
+#if 0
 	dInfo("State\t\t\t%s\n", ProcStateString[mState]);
 #endif
+	pBuf += progressStr(pBuf, pBufEnd, mCntCalc, mCntCalcMax);
 }
 
 /* static functions */
