@@ -92,24 +92,6 @@ Success WlvlMonitoring::process()
 
 		procInfLog("Starting main process");
 
-		cmdReg(
-			"procAdd",
-			&WlvlMonitoring::cmdProcAdd,
-			"", "",
-			"Add dummy process");
-
-		cmdReg(
-			"poolDown",
-			&WlvlMonitoring::cmdPoolDown,
-			"", "",
-			"Shutdown thread pool");
-
-		cmdReg(
-			"poolUp",
-			&WlvlMonitoring::cmdPoolUp,
-			"", "",
-			"Start thread pool");
-
 		mpLed = EspLedPulsing::create();
 		if (!mpLed)
 			return procErrLog(-1, "could not create process");
@@ -143,6 +125,24 @@ Success WlvlMonitoring::process()
 				NULL,		// handle
 				i);			// core ID
 		}
+
+		cmdReg(
+			"procAdd",
+			&WlvlMonitoring::cmdProcAdd,
+			"", "",
+			"Add dummy process");
+
+		cmdReg(
+			"poolDown",
+			&WlvlMonitoring::cmdPoolDown,
+			"", "",
+			"Shutdown thread pool");
+
+		cmdReg(
+			"poolUp",
+			&WlvlMonitoring::cmdPoolUp,
+			"", "",
+			"Start thread pool");
 
 		mState = StPoolStart;
 
