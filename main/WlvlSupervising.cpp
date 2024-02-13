@@ -133,6 +133,8 @@ Success WlvlSupervising::process()
 			return procErrLog(-1, "could not create process");
 
 		pDbg->procTreeDisplaySet(false);
+		SystemDebugging::levelLogSet(3);
+
 		start(pDbg);
 
 		mState = StMain;
