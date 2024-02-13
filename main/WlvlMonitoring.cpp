@@ -194,13 +194,11 @@ void WlvlMonitoring::fancyProcess()
 	{
 	case StFancyIdle:
 
-		if (fancyCreateReq)
-		{
-			fancyCreateReq = false;
-
-			mStateFancy = StFancyStart;
+		if (!fancyCreateReq)
 			break;
-		}
+		fancyCreateReq = false;
+
+		mStateFancy = StFancyStart;
 
 		break;
 	case StFancyStart:
