@@ -62,8 +62,15 @@ private:
 	Success process();
 	void processInfo(char *pBuf, char *pBufEnd);
 
+	void fancyProcess();
+	void poolProcess();
+
 	/* member variables */
+	uint32_t mStateFancy;
+	uint32_t mStatePool;
 	uint32_t mStartMs;
+	uint32_t mDiffMs;
+	uint32_t mLastTimeMs;
 	uint32_t mFancyDiffMs;
 	EspLedPulsing *mpLed;
 	ThreadPooling *mpPool;

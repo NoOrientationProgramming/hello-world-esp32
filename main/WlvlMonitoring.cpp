@@ -34,19 +34,34 @@
 
 #define dForEach_ProcState(gen) \
 		gen(StStart) \
-		gen(StPoolStart) \
-		gen(StPoolDownWait) \
 		gen(StMain) \
-		gen(StFancyStart) \
-		gen(StFancyDoneWait) \
-		gen(StTmp) \
 
 #define dGenProcStateEnum(s) s,
 dProcessStateEnum(ProcState);
 
-#if 1
+#define dForEach_FancyState(gen) \
+		gen(StFancyIdle) \
+		gen(StFancyStart) \
+		gen(StFancyDoneWait) \
+
+#define dGenFancyStateEnum(s) s,
+dProcessStateEnum(FancyState);
+
+#define dForEach_PoolState(gen) \
+		gen(StPoolIdle) \
+		gen(StPoolStart) \
+		gen(StPoolDownWait) \
+
+#define dGenPoolStateEnum(s) s,
+dProcessStateEnum(PoolState);
+
+#if 0
 #define dGenProcStateString(s) #s,
 dProcessStateStr(ProcState);
+#define dGenFancyStateString(s) #s,
+dProcessStateStr(FancyState);
+#define dGenPoolStateString(s) #s,
+dProcessStateStr(PoolState);
 #endif
 
 using namespace std;
@@ -65,7 +80,11 @@ static mutex mtxDrv;
 
 WlvlMonitoring::WlvlMonitoring()
 	: Processing("WlvlMonitoring")
+	, mStateFancy(StFancyIdle)
+	, mStatePool(StPoolIdle)
 	, mStartMs(0)
+	, mDiffMs(0)
+	, mLastTimeMs(0)
 	, mFancyDiffMs(0)
 	, mpLed(NULL)
 	, mpPool(NULL)
@@ -78,14 +97,16 @@ WlvlMonitoring::WlvlMonitoring()
 Success WlvlMonitoring::process()
 {
 	uint32_t curTimeMs = millis();
-	uint32_t diffMs = curTimeMs - mStartMs;
-	Success success;
-	list<FancyCalculating *>::iterator iter;
+	//uint32_t diffMs = curTimeMs - mStartMs;
+	//Success success;
 	TaskHandle_t pTask;
 	UBaseType_t prio;
 #if 0
 	dStateTrace;
 #endif
+	mDiffMs = curTimeMs - mLastTimeMs;
+	mLastTimeMs = curTimeMs;
+
 	switch (mState)
 	{
 	case StStart:
@@ -144,71 +165,40 @@ Success WlvlMonitoring::process()
 			"", "",
 			"Start thread pool");
 
-		mState = StPoolStart;
-
-		break;
-	case StPoolStart:
-
-		mpPool = ThreadPooling::create();
-		if (!mpPool)
-			return procErrLog(-1, "could not create process");
-#if 1
-		mpPool->workerCntSet(2);
-		mpPool->driverCreateFctSet(poolDriverSet);
-#else
-		mpPool->workerCntSet(1);
-#endif
-		start(mpPool);
-
-		mState = StMain;
-
-		break;
-	case StPoolDownWait:
-
-		if (!mpPool->shutdownDone())
-			break;
-
-		procDbgLog(LOG_LVL, "pool shutdown finished");
-
-		repel(mpPool);
-		mpPool = NULL;
+		poolUpReq = true;
 
 		mState = StMain;
 
 		break;
 	case StMain:
 
+		fancyProcess();
+		poolProcess();
+
+		break;
+	default:
+		break;
+	}
+
+	return Pending;
+}
+
+void WlvlMonitoring::fancyProcess()
+{
+	uint32_t curTimeMs = millis();
+	uint32_t diffMs = curTimeMs - mStartMs;
+	Success success;
+	list<FancyCalculating *>::iterator iter;
+
+	switch (mStateFancy)
+	{
+	case StFancyIdle:
+
 		if (fancyCreateReq)
 		{
 			fancyCreateReq = false;
 
-			mState = StFancyStart;
-			break;
-		}
-
-		if (poolDownReq)
-		{
-			poolDownReq = false;
-
-			if (!mpPool)
-				break;
-
-			cancel(mpPool);
-
-			procDbgLog(LOG_LVL, "waiting for pool to be shut down");
-
-			mState = StPoolDownWait;
-			break;
-		}
-
-		if (poolUpReq)
-		{
-			poolUpReq = false;
-
-			if (mpPool)
-				break;
-
-			mState = StPoolStart;
+			mStateFancy = StFancyStart;
 			break;
 		}
 
@@ -242,7 +232,7 @@ Success WlvlMonitoring::process()
 		}
 
 		mStartMs = millis();
-		mState = StFancyDoneWait;
+		mStateFancy = StFancyDoneWait;
 
 		break;
 	case StFancyDoneWait:
@@ -256,7 +246,7 @@ Success WlvlMonitoring::process()
 
 			success = pFancy->success();
 			if (success == Pending)
-				return Pending;
+				return;
 
 			repel(pFancy);
 			pFancy = NULL;
@@ -264,17 +254,84 @@ Success WlvlMonitoring::process()
 			iter = mLstFancy.erase(iter);
 		}
 
-		mState = StMain;
+		mStateFancy = StFancyIdle;
 
 		break;
-	case StTmp:
+	default:
+		break;
+	}
+}
+
+void WlvlMonitoring::poolProcess()
+{
+	switch (mStatePool)
+	{
+	case StPoolIdle:
+
+		if (poolDownReq)
+		{
+			poolDownReq = false;
+
+			if (!mpPool)
+				break;
+
+			cancel(mpPool);
+
+			procDbgLog(LOG_LVL, "waiting for pool to be shut down");
+
+			mStatePool = StPoolDownWait;
+			break;
+		}
+
+		if (poolUpReq)
+		{
+			poolUpReq = false;
+
+			if (mpPool)
+				break;
+
+			mStatePool = StPoolStart;
+			break;
+		}
+
+		break;
+	case StPoolStart:
+
+		mpPool = ThreadPooling::create();
+		if (!mpPool)
+		{
+			mStatePool = StPoolIdle;
+			procErrLog(-1, "could not create process");
+			return;
+		}
+#if 1
+		mpPool->workerCntSet(2);
+		mpPool->driverCreateFctSet(poolDriverSet);
+#else
+		mpPool->workerCntSet(1);
+#endif
+		start(mpPool);
+
+		mStatePool = StPoolIdle;
+
+		break;
+	case StPoolDownWait:
+
+		if (!mpPool->shutdownDone())
+			break;
+
+		procDbgLog(LOG_LVL, "pool shutdown finished");
+
+		repel(mpPool);
+		mpPool = NULL;
+
+		mStatePool = StPoolIdle;
 
 		break;
 	default:
 		break;
 	}
 
-	return Pending;
 }
 
 /*
@@ -374,10 +431,13 @@ void WlvlMonitoring::cmdPoolUp(char *pArgs, char *pBuf, char *pBufEnd)
 
 void WlvlMonitoring::processInfo(char *pBuf, char *pBufEnd)
 {
-#if 1
+#if 0
 	dInfo("State\t\t\t%s\n", ProcStateString[mState]);
+	dInfo("State Fancy\t\t\t%s\n", FancyStateString[mStateFancy]);
+	dInfo("State Pool\t\t\t%s\n", PoolStateString[mStatePool]);
 #endif
-	dInfo("Fancy duration\t\t%lums", mFancyDiffMs);
+	dInfo("Loop duration\t\t%lums\n", mDiffMs);
+	dInfo("Fancy duration\t\t%lums\n", mFancyDiffMs);
 }
 
 /* static functions */
