@@ -1,6 +1,7 @@
 
 build/
 ignore/
+literature/
 
 dependencies.lock
 *.old
