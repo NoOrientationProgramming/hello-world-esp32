@@ -1,0 +1,7 @@
+
+build/
+ext/
+
+dependencies.lock
+*.old
+
