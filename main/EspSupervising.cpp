@@ -162,6 +162,7 @@ bool EspSupervising::servicesStart()
 
 void EspSupervising::processInfo(char *pBuf, char *pBufEnd)
 {
+	dInfo("Hello World ESP32!\n");
 #if 1
 	dInfo("State\t\t\t%s\n", ProcStateString[mState]);
 #endif
