@@ -23,11 +23,15 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <esp_err.h>
+#include <nvs_flash.h>
+
 #include "EspSupervising.h"
 #include "InfoTesting.h"
 
 #define dForEach_ProcState(gen) \
 		gen(StStart) \
+		gen(StNvsInit) \
 		gen(StWifiStart) \
 		gen(StWifiConnectedWait) \
 		gen(StMainStart) \
@@ -60,11 +64,16 @@ EspSupervising::EspSupervising()
 
 /* member functions */
 
+/*
+ * Literature
+ * - https://docs.espressif.com/projects/esp-idf/en/v4.2/esp32/api-reference/storage/nvs_flash.html
+ */
 Success EspSupervising::process()
 {
 	//uint32_t curTimeMs = millis();
 	//uint32_t diffMs = curTimeMs - mStartMs;
 	//Success success;
+	esp_err_t res;
 	bool ok;
 #if 0
 	dStateTrace;
@@ -72,6 +81,26 @@ Success EspSupervising::process()
 	switch (mState)
 	{
 	case StStart:
+
+		mState = StNvsInit;
+
+		break;
+	case StNvsInit:
+
+		res = nvs_flash_init();
+		if (res == ESP_ERR_NVS_NO_FREE_PAGES || res == ESP_ERR_NVS_NEW_VERSION_FOUND)
+		{
+			res = nvs_flash_erase();
+			if (res != ESP_OK)
+				return procErrLog(-1, "could not erase NVS: %s (0x%04x)",
+									esp_err_to_name(res), res);
+
+			res = nvs_flash_init();
+		}
+
+		if (res != ESP_OK)
+			return procErrLog(-1, "could not init NVS: %s (0x%04x)",
+								esp_err_to_name(res), res);
 
 		mState = StWifiStart;
 
@@ -87,7 +116,7 @@ Success EspSupervising::process()
 
 		start(mpWifi);
 
-		procInfLog("waiting for wifi");
+		procInfLog("waiting for WiFi");
 
 		mState = StWifiConnectedWait;
 
@@ -97,7 +126,7 @@ Success EspSupervising::process()
 		if (!EspWifiConnecting::isOk())
 			break;
 
-		procInfLog("wifi connected");
+		procInfLog("WiFi connected");
 
 		mState = StMainStart;
 
