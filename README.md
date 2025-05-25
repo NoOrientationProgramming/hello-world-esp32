@@ -52,11 +52,11 @@ telnet <ip> 3000
 
 ### Process Log
 ```
-telnet <ip> 3001
+telnet <ip> 3002
 ```
 
 ### Command Interface
 ```
-telnet <ip> 3002
+telnet <ip> 3004
 ```
 
