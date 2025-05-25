@@ -9,11 +9,12 @@ using namespace std;
 
 extern "C" void app_main()
 {
-	ESP_LOGI("main_task", "Starting main");
-
 	Processing *pApp = EspSupervising::create();
 
 	levelLogSet(4);
+
+	ESP_LOGI("main_task", "starting main");
+	infLog("starting main");
 
 	while (1)
 	{
