@@ -28,6 +28,7 @@
 
 #include "Processing.h"
 #include "EspWifiConnecting.h"
+#include "SystemDebugging.h"
 
 class EspSupervising : public Processing
 {
@@ -62,6 +63,7 @@ private:
 	/* member variables */
 	//uint32_t mStartMs;
 	EspWifiConnecting *mpWifi;
+	SystemDebugging *mpDbg;
 	uint32_t mCntCycles;
 
 	/* static functions */

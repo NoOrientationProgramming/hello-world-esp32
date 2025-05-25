@@ -24,7 +24,6 @@
 */
 
 #include "EspSupervising.h"
-#include "SystemDebugging.h"
 #include "InfoTesting.h"
 
 #define dForEach_ProcState(gen) \
@@ -53,6 +52,7 @@ EspSupervising::EspSupervising()
 	: Processing("EspSupervising")
 	//, mStartMs(0)
 	, mpWifi(NULL)
+	, mpDbg(NULL)
 	, mCntCycles(0)
 {
 	mState = StStart;
@@ -106,7 +106,7 @@ Success EspSupervising::process()
 
 		ok = servicesStart();
 		if (!ok)
-			return procErrLog(-1, "could not start services");
+			procWrnLog("could not start services");
 
 		cmdReg("led",
 			cmdLedToggle,
@@ -135,18 +135,17 @@ Success EspSupervising::process()
 
 bool EspSupervising::servicesStart()
 {
-	SystemDebugging *pDbg;
-	Processing *pProc;
-
-	pDbg = SystemDebugging::create(this);
-	if (!pDbg)
+	mpDbg = SystemDebugging::create(this);
+	if (!mpDbg)
 	{
 		procWrnLog("could not create process");
 		return false;
 	}
 
-	pDbg->procTreeDisplaySet(false);
-	start(pDbg);
+	mpDbg->procTreeDisplaySet(false);
+	start(mpDbg);
+
+	Processing *pProc;
 
 	pProc = InfoTesting::create();
 	if (!pProc)
