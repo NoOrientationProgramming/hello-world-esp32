@@ -5,17 +5,19 @@
 
 ...
 
-## Clone repository
+## How to use
+
+### Clone repo with
 ```
 git clone https://github.com/NoOrientationProgramming/hello-world-esp32.git --recursive
 ```
 
-## Enter directory
+Enter directory
 ```
 cd hello-world-esp32/
 ```
 
-## Set WiFi variables
+### Set WiFi variables
 
 On Windows
 ```
@@ -29,7 +31,7 @@ export ESP_WIFI_SSID=MySSID
 export ESP_WIFI_PASSWORD=MyPassword
 ```
 
-## Load toolchain
+### Load toolchain
 
 Must be installed already, see [ESP-IDF Setup](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-macos-setup.html)
 
@@ -37,12 +39,12 @@ Must be installed already, see [ESP-IDF Setup](https://docs.espressif.com/projec
 . ../esp-idf/export.sh
 ```
 
-## Build project
+### Build project
 ```
 idf.py build
 ```
 
-## Flash ESP
+### Flash to device
 ```
 idf.py flash
 ```
