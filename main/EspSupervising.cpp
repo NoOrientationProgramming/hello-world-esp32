@@ -36,6 +36,7 @@
 		gen(StWifiConnectedWait) \
 		gen(StMainStart) \
 		gen(StMain) \
+		gen(StDbgFinishedWait) \
 
 #define dGenProcStateEnum(s) s,
 dProcessStateEnum(ProcState);
@@ -51,6 +52,8 @@ using namespace std;
 #define CONFIG_INT_ESP_WIFI_SSID		"ssid"
 #define CONFIG_INT_ESP_WIFI_PASSWORD	"password"
 #endif
+
+static bool resetReq = false;
 
 EspSupervising::EspSupervising()
 	: Processing("EspSupervising")
@@ -154,6 +157,23 @@ Success EspSupervising::process()
 
 		++mCntCycles;
 
+		if (!resetReq)
+			break;
+
+		cancel(mpDbg);
+
+		mState = StDbgFinishedWait;
+
+		break;
+	case StDbgFinishedWait:
+
+		if (mpDbg->progress())
+			break;
+
+		repel(mpDbg);
+
+		return Positive;
+
 		break;
 	default:
 		break;
@@ -207,6 +227,6 @@ void EspSupervising::cmdLedToggle(char *pArgs, char *pBuf, char *pBufEnd)
 
 void EspSupervising::cmdReset(char *pArgs, char *pBuf, char *pBufEnd)
 {
-	dInfo("ESP32 reset");
+	resetReq = true;
 }
 

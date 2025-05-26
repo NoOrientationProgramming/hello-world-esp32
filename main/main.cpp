@@ -1,9 +1,10 @@
 
 #include <thread>
 
-#include "EspSupervising.h"
+#include <esp_log.h>
+#include <esp_system.h>
 
-#include "esp_log.h"
+#include "EspSupervising.h"
 
 using namespace std;
 
@@ -21,8 +22,16 @@ void taskSupervising(void *pvParameters)
 	while (1)
 	{
 		pApp->treeTick();
+
 		vTaskDelay(pdMS_TO_TICKS(10));
+
+		if (pApp->progress())
+			continue;
+
+		break;
 	}
+
+	esp_restart();
 }
 
 /*
