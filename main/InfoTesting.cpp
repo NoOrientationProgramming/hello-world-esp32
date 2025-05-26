@@ -72,11 +72,6 @@ Success InfoTesting::process()
 			"di", "Display UTF-8 in process tree",
 			"Testing");
 
-		cmdReg("你好",
-			cmdDisplay,
-			"", "Display UTF-8 in process tree",
-			"Testing");
-
 		cmdReg("logTest",
 			cmdLogTest,
 			"", "Test full-/halfduplex logging",
