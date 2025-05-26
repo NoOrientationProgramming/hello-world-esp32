@@ -171,6 +171,7 @@ Success EspSupervising::process()
 			break;
 
 		repel(mpDbg);
+		mpDbg = NULL;
 
 		return Positive;
 
