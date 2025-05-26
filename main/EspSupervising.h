@@ -67,7 +67,6 @@ private:
 	uint32_t mCntCycles;
 
 	/* static functions */
-	static void cmdLedToggle(char *pArgs, char *pBuf, char *pBufEnd);
 	static void cmdReset(char *pArgs, char *pBuf, char *pBufEnd);
 
 	/* static variables */

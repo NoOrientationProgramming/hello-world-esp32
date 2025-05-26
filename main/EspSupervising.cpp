@@ -25,6 +25,7 @@
 
 #include <esp_err.h>
 #include <nvs_flash.h>
+#include <driver/gpio.h>
 
 #include "EspSupervising.h"
 #include "InfoTesting.h"
@@ -140,11 +141,6 @@ Success EspSupervising::process()
 		if (!ok)
 			procWrnLog("could not start services");
 
-		cmdReg("led",
-			cmdLedToggle,
-			"", "Toggle LED",
-			"LEDs");
-
 		cmdReg("reset",
 			cmdReset,
 			"", "Reset the ESP32 microcontroller",
@@ -220,14 +216,9 @@ void EspSupervising::processInfo(char *pBuf, char *pBufEnd)
 
 /* static functions */
 
-void EspSupervising::cmdLedToggle(char *pArgs, char *pBuf, char *pBufEnd)
-{
-	dInfo("LED toggled");
-	infLog("LED toggled");
-}
-
 void EspSupervising::cmdReset(char *pArgs, char *pBuf, char *pBufEnd)
 {
+	(void)pArgs;
 	resetReq = true;
 }
 
