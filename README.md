@@ -1,5 +1,5 @@
-[![Standard](https://img.shields.io/badge/standard-C%2B%2B11-blue.svg?style=plastic&logo=c%2B%2B)](https://en.wikipedia.org/wiki/C%2B%2B#Standardization)
 ![GitHub](https://img.shields.io/github/license/NoOrientationProgramming/hello-world-stm32?style=plastic&color=blue)
+[![Standard](https://img.shields.io/badge/standard-C%2B%2B11-blue.svg?style=plastic&logo=c%2B%2B)](https://en.wikipedia.org/wiki/C%2B%2B#Standardization)
 
 ## ESP32 Hello World
 
