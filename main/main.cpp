@@ -7,8 +7,10 @@
 
 using namespace std;
 
-extern "C" void app_main()
+void taskSupervising(void *pvParameters)
 {
+	(void)pvParameters;
+
 	Processing *pApp = EspSupervising::create();
 
 	levelLogSet(4);
@@ -19,7 +21,17 @@ extern "C" void app_main()
 	while (1)
 	{
 		pApp->treeTick();
-		this_thread::sleep_for(chrono::milliseconds(2));
+		vTaskDelay(pdMS_TO_TICKS(10));
 	}
+}
+
+/*
+ * Literature
+ * - https://docs.espressif.com/projects/esp-idf/en/v4.2/esp32s2/api-reference/system/freertos.html
+ */
+extern "C" void app_main()
+{
+	xTaskCreate(taskSupervising, "EspSupervising()", 4096, NULL, 5, NULL);
+	vTaskDelay(portMAX_DELAY);
 }
 
